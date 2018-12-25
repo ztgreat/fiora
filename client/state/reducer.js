@@ -17,7 +17,7 @@ if (!backgroundImage) {
         canvas.height = img.height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
-        const base64 = canvas.toDataURL('image/png');
+        const base64 = canvas.toDataURL('image/jpeg');
         window.localStorage.setItem('backgroundImage', base64);
     };
     img.src = backgroundImage;
