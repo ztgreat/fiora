@@ -9,9 +9,14 @@ import './FeatureLinkmans.less';
 class FeatureLinkmans extends Component {
     static propTypes = {
         isLogin: PropTypes.bool.isRequired,
+        close: PropTypes.bool.isRequired,
     }
-    render() {
-        const { isLogin } = this.props;
+
+    renderContent =() => {
+        const { close, isLogin } = this.props;
+        if (close || !isLogin) {
+            return (<div />);
+        }
         return (
             <div className="module-main-feature">
                 { isLogin ? <Feature /> : null}
@@ -19,8 +24,15 @@ class FeatureLinkmans extends Component {
             </div>
         );
     }
+
+    render() {
+        return (
+            this.renderContent()
+        );
+    }
 }
 
 export default connect(state => ({
     isLogin: !!state.getIn(['user', '_id']),
+    close: !!state.getIn(['ui', 'showGroup']),
 }))(FeatureLinkmans);

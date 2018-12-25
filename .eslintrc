@@ -15,8 +15,9 @@
     "globals": {
         "importScripts": true,
         "workbox": true
-    }, 
+    },
     "rules": {
+        "linebreak-style": [0 ,"error", "windows"],
         "indent": [2, 4],
         "global-require": 0,
         "new-cap": 0,

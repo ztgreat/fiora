@@ -202,11 +202,11 @@ export default connect((state) => {
     return {
         userId: state.getIn(['user', '_id']),
         focus,
-        type: linkman.get('type'),
-        creator: linkman.get('creator'),
-        to: linkman.get('to'),
-        name: linkman.get('name'),
-        avatar: linkman.get('avatar'),
-        members: linkman.get('members') || immutable.fromJS([]),
+        type: linkman ? linkman.get('type') : null,
+        creator: linkman ? linkman.get('creator') : null,
+        to: linkman ? linkman.get('to') : null,
+        name: linkman ? linkman.get('name') : null,
+        avatar: linkman ? linkman.get('avatar') : null,
+        members: linkman ? (linkman.get('members') || immutable.fromJS([])) : immutable.fromJS([]),
     };
 })(Chat);

@@ -436,9 +436,16 @@ class ChatInput extends Component {
     )
     render() {
         const { expressionVisible, codeInputVisible, expressionSearchVisible, expressionSearchResults, expressionSearchLoading, at } = this.state;
-        const { isLogin } = this.props;
+        const { isLogin, focus, userName } = this.props;
 
         if (isLogin) {
+            if (!focus) {
+                return (
+                    <div className="chat-chatInput guest">
+                        <p>{userName} 你好, 请 加入 群组 后参与聊天</p>
+                    </div>
+                );
+            }
             return (
                 <div className="chat-chatInput">
                     <Dropdown

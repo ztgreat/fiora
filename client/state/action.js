@@ -47,19 +47,23 @@ async function setUser(user) {
         ...user.groups.map(g => g._id),
         ...user.friends.map(f => f._id),
     ];
-    const [err, messages] = await fetch('getLinkmansLastMessages', { linkmans: linkmanIds });
-    for (const key in messages) {
-        messages[key].forEach(m => convertRobot10Message(m));
-    }
-    if (!err) {
-        dispatch({
-            type: 'SetLinkmanMessages',
-            messages,
-        });
+    if (linkmanIds.length > 0) {
+        const [err, messages] = await fetch('getLinkmansLastMessages', { linkmans: linkmanIds });
+        for (const key in messages) {
+            messages[key].forEach(m => convertRobot10Message(m));
+        }
+        if (!err) {
+            dispatch({
+                type: 'SetLinkmanMessages',
+                messages,
+            });
+        }
     }
 }
 async function setGuest(defaultGroup) {
-    defaultGroup.messages.forEach(m => convertRobot10Message(m));
+    if (defaultGroup && defaultGroup.messages) {
+        defaultGroup.messages.forEach(m => convertRobot10Message(m));
+    }
     dispatch({
         type: 'SetDeepValue',
         keys: ['user'],
@@ -190,6 +194,14 @@ function showLoginDialog() {
         value: true,
     });
 }
+
+function showGroup(value) {
+    dispatch({
+        type: 'SetDeepValue',
+        keys: ['ui', 'showGroup'],
+        value: !!value,
+    });
+}
 function closeLoginDialog() {
     dispatch({
         type: 'SetDeepValue',
@@ -284,4 +296,5 @@ export default {
     setSoundSwitch,
     setNotificationSwitch,
     setVoiceSwitch,
+    showGroup,
 };

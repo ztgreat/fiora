@@ -29,14 +29,16 @@ mongoose.connect(config.database, async (err) => {
     // 判断默认群是否存在, 不存在就创建一个
     const group = await Group.findOne({ isDefault: true });
     if (!group) {
-        const defaultGroup = await Group.create({
-            name: config.defaultGroupName,
-            avatar: getRandomAvatar(),
-            isDefault: true,
-        });
-        if (!defaultGroup) {
-            console.error('create default group fail');
-            return process.exit(1);
+        if (config.defaultGroupName && config.defaultGroupName !== '') {
+            const defaultGroup = await Group.create({
+                name: config.defaultGroupName,
+                avatar: getRandomAvatar(),
+                isDefault: true,
+            });
+            if (!defaultGroup) {
+                console.error('create default group fail');
+                return process.exit(1);
+            }
         }
     }
 

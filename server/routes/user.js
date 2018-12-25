@@ -58,9 +58,6 @@ module.exports = {
         const user = await User.findOne({ username });
         assert(!user, '该用户名已存在');
 
-        const defaultGroup = await Group.findOne({ isDefault: true });
-        assert(defaultGroup, '默认群组不存在');
-
         const salt = await bcrypt.genSalt$(saltRounds);
         const hash = await bcrypt.hash$(password, salt);
 
@@ -81,8 +78,12 @@ module.exports = {
 
         handleNewUser(newUser);
 
-        defaultGroup.members.push(newUser);
-        await defaultGroup.save();
+        const defaultGroup = await Group.findOne({ isDefault: true });
+        if (defaultGroup) {
+            // assert(defaultGroup, '默认群组不存在');
+            defaultGroup.members.push(newUser);
+            await defaultGroup.save();
+        }
 
         const token = generateToken(newUser._id, environment);
 
@@ -94,18 +95,29 @@ module.exports = {
             environment,
         });
 
+        if (defaultGroup) {
+            return {
+                _id: newUser._id,
+                avatar: newUser.avatar,
+                username: newUser.username,
+                groups: [{
+                    _id: defaultGroup._id,
+                    name: defaultGroup.name,
+                    avatar: defaultGroup.avatar,
+                    creator: defaultGroup.creator,
+                    createTime: defaultGroup.createTime,
+                    messages: [],
+                }],
+                friends: [],
+                token,
+                isAdmin: false,
+            };
+        }
         return {
             _id: newUser._id,
             avatar: newUser.avatar,
             username: newUser.username,
-            groups: [{
-                _id: defaultGroup._id,
-                name: defaultGroup.name,
-                avatar: defaultGroup.avatar,
-                creator: defaultGroup.creator,
-                createTime: defaultGroup.createTime,
-                messages: [],
-            }],
+            groups: [],
             friends: [],
             token,
             isAdmin: false,
@@ -222,6 +234,9 @@ module.exports = {
         });
 
         const group = await Group.findOne({ isDefault: true }, { _id: 1, name: 1, avatar: 1, createTime: 1 });
+        if (group === null) {
+            return {};
+        }
         ctx.socket.socket.join(group._id);
 
         const messages = await Message

@@ -83,8 +83,12 @@ function reducer(state = initialState, action) {
         let newState = state;
         if (state.getIn(['user', '_id']) === undefined) {
             newState = newState
-                .set('user', immutable.fromJS(action.user))
-                .set('focus', state.get('focus') || action.user.linkmans[0]._id);
+                .set('user', immutable.fromJS(action.user));
+            if (action.user.linkmans.length > 0) {
+                newState = newState.set('focus', state.get('focus') || action.user.linkmans[0]._id);
+            } else {
+                newState = newState.set('focus', state.get('focus'));
+            }
         } else {
             newState = newState.updateIn(['user', 'linkmans'], (linkmans) => {
                 let newLinkmans = linkmans;

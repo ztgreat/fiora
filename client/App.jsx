@@ -74,6 +74,12 @@ class App extends Component {
             top: `${(1 - height) / 2 * 100}%`,
         };
     }
+    get LoginStyle() {
+        const { width } = this.state;
+        return {
+            width: `${width * 100}%`,
+        };
+    }
     static getWidth() {
         let width = 0.6;
         if (window.innerWidth < 1000) {
