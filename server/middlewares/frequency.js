@@ -19,7 +19,7 @@ module.exports = function () {
 
         // 萌新限制
         if (user && newUserList.has(user.toString()) && count > 5) {
-            return ctx.res = '接口调用失败, 你正处于萌新限制期, 请不要频繁操作';
+            return ctx.res = '请不要频繁操作';
         }
         // 普通用户限制
         if (count > MaxCallPerMinutes) {

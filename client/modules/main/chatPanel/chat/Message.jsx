@@ -76,7 +76,7 @@ class Message extends Component {
         this.state = {};
         if (props.type === 'code') {
             this.state.showCode = false;
-        } else if (props.type === 'iamge') {
+        } else if (props.type === 'image') {
             this.state.showImage = false;
         }
     }
@@ -84,6 +84,9 @@ class Message extends Component {
         const { type, content, shouldScroll, isSelf } = this.props;
         if (type === 'image') {
             let maxWidth = this.dom.clientWidth - 100;
+            if (maxWidth < 0) {
+                maxWidth = 180;
+            }
             const maxHeight = 400;
             if (maxWidth > 500) {
                 maxWidth = 500;

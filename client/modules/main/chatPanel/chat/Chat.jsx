@@ -40,6 +40,8 @@ class Chat extends Component {
     }
     componentDidMount() {
         document.body.addEventListener('click', this.handleBodyClick.bind(this), false);
+        // 手机端 touch 事件
+        document.body.addEventListener('touchend', this.handleBodyClick.bind(this), false);
     }
     handleBodyClick(e) {
         if (!this.state.groupInfoDialog) {
