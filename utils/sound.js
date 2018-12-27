@@ -24,10 +24,11 @@ function play() {
         if (playPromise) {
             playPromise.then(() => {
                 isPlaying = false;
-            }).catch(() => {
-                isPlaying = false;
-                $audio.load();
-                play();
+            }).catch((res) => {
+                console.log("播放音频异常")
+                // isPlaying = false;
+                // $audio.load();
+                // play();
             });
         }
     }
