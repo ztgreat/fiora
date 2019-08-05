@@ -37,6 +37,9 @@ class Feature extends Component {
     componentDidMount() {
         document.body.addEventListener('click', this.handleBodyClick, false);
     }
+    componentWillUnmount() {
+        document.body.removeEventListener('click', this.handleBodyClick, false);
+    }
     resetSearchView = () => {
         this.setState({
             showSearchResult: false,
@@ -61,7 +64,7 @@ class Feature extends Component {
                 return;
             }
             target = target.parentElement;
-        } while (target !== currentTarget);
+        } while (target && target !== currentTarget);
         this.resetSearchView();
     }
     handleFocus = () => {
@@ -133,7 +136,7 @@ class Feature extends Component {
         });
         this.resetSearchView();
     }
-    renderSearchUsers(count = Infinity) {
+    renderSearchUsers(count = 999) {
         const { users } = this.state.searchResult;
         count = Math.min(count, users.length);
 
@@ -148,7 +151,7 @@ class Feature extends Component {
         }
         return usersDom;
     }
-    renderSearchGroups(count = Infinity) {
+    renderSearchGroups(count = 999) {
         const { groups } = this.state.searchResult;
         count = Math.min(count, groups.length);
 
@@ -179,7 +182,9 @@ class Feature extends Component {
         } = this.state;
         return (
             <div className="chatPanel-feature">
-                <input className={showSearchResult ? 'focus' : 'blur'} type="text" placeholder="搜索群组/用户" autoComplete="false" ref={i => this.searchInput = i} onFocus={this.handleFocus} onKeyDown={this.handleInputKeyDown} />
+                <form autoComplete="off" action="javascript:void(0);">
+                    <input className={showSearchResult ? 'focus' : 'blur'} type="text" placeholder="搜索群组/用户" ref={i => this.searchInput = i} onFocus={this.handleFocus} onKeyDown={this.handleInputKeyDown} />
+                </form>
                 <i className="iconfont icon-search" />
                 <IconButton style={{ display: showAddButton ? 'block' : 'none' }} width={40} height={40} icon="add" iconSize={38} onClick={this.toggleCreateGroupDialog} />
                 <Dialog className="create-group-dialog" title="创建群组" visible={createGroupDialog} onClose={this.toggleCreateGroupDialog}>

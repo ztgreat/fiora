@@ -1,6 +1,6 @@
 const assert = require('assert');
 const bluebird = require('bluebird');
-const bcrypt = bluebird.promisifyAll(require('bcrypt'), { suffix: '$' });
+const bcrypt = bluebird.promisifyAll(require('bcryptjs'), { suffix: '$' });
 const jwt = require('jwt-simple');
 const { isValid } = require('mongoose').Types.ObjectId;
 
@@ -58,6 +58,9 @@ module.exports = {
         const user = await User.findOne({ username });
         assert(!user, '该用户名已存在');
 
+        const defaultGroup = await Group.findOne({ isDefault: true });
+        assert(defaultGroup, '默认群组不存在');
+
         const salt = await bcrypt.genSalt$(saltRounds);
         const hash = await bcrypt.hash$(password, salt);
 
@@ -78,46 +81,34 @@ module.exports = {
 
         handleNewUser(newUser);
 
-        const defaultGroup = await Group.findOne({ isDefault: true });
-        if (defaultGroup) {
-            // assert(defaultGroup, '默认群组不存在');
-            defaultGroup.members.push(newUser);
-            await defaultGroup.save();
+        if (!defaultGroup.creator) {
+            defaultGroup.creator = newUser;
         }
+        defaultGroup.members.push(newUser);
+        await defaultGroup.save();
 
         const token = generateToken(newUser._id, environment);
 
         ctx.socket.user = newUser._id;
-        await Socket.update({ id: ctx.socket.id }, {
+        await Socket.updateOne({ id: ctx.socket.id }, {
             user: newUser._id,
             os,
             browser,
             environment,
         });
 
-        if (defaultGroup) {
-            return {
-                _id: newUser._id,
-                avatar: newUser.avatar,
-                username: newUser.username,
-                groups: [{
-                    _id: defaultGroup._id,
-                    name: defaultGroup.name,
-                    avatar: defaultGroup.avatar,
-                    creator: defaultGroup.creator,
-                    createTime: defaultGroup.createTime,
-                    messages: [],
-                }],
-                friends: [],
-                token,
-                isAdmin: false,
-            };
-        }
         return {
             _id: newUser._id,
             avatar: newUser.avatar,
             username: newUser.username,
-            groups: [],
+            groups: [{
+                _id: defaultGroup._id,
+                name: defaultGroup.name,
+                avatar: defaultGroup.avatar,
+                creator: defaultGroup.creator._id,
+                createTime: defaultGroup.createTime,
+                messages: [],
+            }],
             friends: [],
             token,
             isAdmin: false,
@@ -145,7 +136,7 @@ module.exports = {
 
         const groups = await Group.find({ members: user }, { _id: 1, name: 1, avatar: 1, creator: 1, createTime: 1 });
         groups.forEach((group) => {
-            ctx.socket.socket.join(group._id);
+            ctx.socket.join(group._id);
         });
 
         const friends = await Friend
@@ -155,7 +146,7 @@ module.exports = {
         const token = generateToken(user._id, environment);
 
         ctx.socket.user = user._id;
-        await Socket.update({ id: ctx.socket.id }, {
+        await Socket.updateOne({ id: ctx.socket.id }, {
             user: user._id,
             os,
             browser,
@@ -200,7 +191,7 @@ module.exports = {
 
         const groups = await Group.find({ members: user }, { _id: 1, name: 1, avatar: 1, creator: 1, createTime: 1 });
         groups.forEach((group) => {
-            ctx.socket.socket.join(group._id);
+            ctx.socket.join(group._id);
         });
 
         const friends = await Friend
@@ -208,7 +199,7 @@ module.exports = {
             .populate('to', { avatar: 1, username: 1 });
 
         ctx.socket.user = user._id;
-        await Socket.update({ id: ctx.socket.id }, {
+        await Socket.updateOne({ id: ctx.socket.id }, {
             user: user._id,
             os,
             browser,
@@ -227,17 +218,14 @@ module.exports = {
     async guest(ctx) {
         const { os, browser, environment } = ctx.data;
 
-        await Socket.update({ id: ctx.socket.id }, {
+        await Socket.updateOne({ id: ctx.socket.id }, {
             os,
             browser,
             environment,
         });
 
         const group = await Group.findOne({ isDefault: true }, { _id: 1, name: 1, avatar: 1, createTime: 1 });
-        if (group === null) {
-            return {};
-        }
-        ctx.socket.socket.join(group._id);
+        ctx.socket.join(group._id);
 
         const messages = await Message
             .find(
@@ -254,7 +242,7 @@ module.exports = {
         const { avatar } = ctx.data;
         assert(avatar, '新头像链接不能为空');
 
-        await User.update({ _id: ctx.socket.user }, {
+        await User.updateOne({ _id: ctx.socket.user }, {
             avatar,
         });
 
@@ -290,7 +278,7 @@ module.exports = {
         const user = await User.findOne({ _id: userId });
         assert(user, '用户不存在');
 
-        await Friend.remove({ from: ctx.socket.user, to: user._id });
+        await Friend.deleteOne({ from: ctx.socket.user, to: user._id });
         return {};
     },
     /**
@@ -313,6 +301,47 @@ module.exports = {
 
         return {
             msg: 'ok',
+        };
+    },
+    /**
+     * 修改用户名
+     */
+    async changeUsername(ctx) {
+        const { username } = ctx.data;
+        assert(username, '新用户名不能为空');
+
+        const user = await User.findOne({ username });
+        assert(!user, '该用户名已存在, 换一个试试吧');
+
+        const self = await User.findOne({ _id: ctx.socket.user });
+
+        self.username = username;
+        await self.save();
+
+        return {
+            msg: 'ok',
+        };
+    },
+    /**
+     * 重置用户密码
+     */
+    async resetUserPassword(ctx) {
+        const { username } = ctx.data;
+        assert(username !== '', 'username不能为空');
+
+        const user = await User.findOne({ username });
+        assert(user, '用户不存在');
+
+        const newPassword = 'helloworld';
+        const salt = await bcrypt.genSalt$(saltRounds);
+        const hash = await bcrypt.hash$(newPassword, salt);
+
+        user.salt = salt;
+        user.password = hash;
+        await user.save();
+
+        return {
+            newPassword,
         };
     },
 };

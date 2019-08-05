@@ -38,7 +38,7 @@ class ChatInput extends Component {
             const sel = document.selection.createRange();
             sel.text = value;
             sel.select();
-        } else if (input.selectionStart || input.selectionStart === '0') {
+        } else if (input.selectionStart || input.selectionStart === 0) {
             const startPos = input.selectionStart;
             const endPos = input.selectionEnd;
             const restoreTop = input.scrollTop;
@@ -105,7 +105,12 @@ class ChatInput extends Component {
             expressionVisible: visible,
         });
     }
-    handleFeatureMenuClick = ({ key }) => {
+    handleFeatureMenuClick = ({ key, domEvent }) => {
+        // Quickly hitting the Enter key causes the button to repeatedly trigger the problem
+        if (domEvent.keyCode === 13) {
+            return;
+        }
+
         switch (key) {
         case 'image': {
             this.handleSelectFile();
@@ -265,8 +270,7 @@ class ChatInput extends Component {
 
         return _id;
     }
-    sendMessage = async (localId, type, content) => {
-        const { focus } = this.props;
+    sendMessage = async (localId, type, content, focus = this.props.focus) => {
         const [err, res] = await fetch('sendMessage', {
             to: focus,
             type,
@@ -288,7 +292,6 @@ class ChatInput extends Component {
             return Message.warning('要发送的图片过大', 3);
         }
 
-        const { userId, focus } = this.props;
         const ext = image.type.split('/').pop().toLowerCase();
         const url = URL.createObjectURL(image.result);
 
@@ -296,6 +299,7 @@ class ChatInput extends Component {
         img.onload = async () => {
             const id = this.addSelfMessage('image', `${url}?width=${img.width}&height=${img.height}`);
             try {
+                const { userId, focus } = this.props;
                 const imageUrl = await uploadFile(
                     image.result,
                     `ImageMessage/${userId}_${Date.now()}.${ext}`,
@@ -304,7 +308,7 @@ class ChatInput extends Component {
                         action.updateSelfMessage(focus, id, { percent: info.total.percent });
                     },
                 );
-                this.sendMessage(id, 'image', `${imageUrl}?width=${img.width}&height=${img.height}`);
+                this.sendMessage(id, 'image', `${imageUrl}?width=${img.width}&height=${img.height}`, focus);
             } catch (err) {
                 console.error(err);
                 Message.error('上传图片失败');
@@ -466,17 +470,20 @@ class ChatInput extends Component {
                     >
                         <IconButton className="feature" width={44} height={44} icon="feature" iconSize={32} />
                     </Dropdown>
-                    <input
-                        type="text"
-                        placeholder="代码会写了吗, 给加薪了吗, 股票涨了吗, 来吐槽一下吧~~"
-                        maxLength="2048"
-                        autofoucus="true"
-                        ref={i => this.message = i}
-                        onKeyDown={this.handleInputKeyDown}
-                        onPaste={this.handlePaste}
-                        onCompositionStart={this.handleIMEStart}
-                        onCompositionEnd={this.handleIMEEnd}
-                    />
+                    <form autoComplete="off" action="javascript:void(0);">
+                        <input
+                            type="text"
+                            placeholder="代码会写了吗, 给加薪了吗, 股票涨了吗, 来吐槽一下吧~~"
+                            maxLength="2048"
+                            autofoucus="true"
+                            ref={i => this.message = i}
+                            onKeyDown={this.handleInputKeyDown}
+                            onPaste={this.handlePaste}
+                            onCompositionStart={this.handleIMEStart}
+                            onCompositionEnd={this.handleIMEEnd}
+                        />
+                    </form>
+
                     <IconButton className="send" width={44} height={44} icon="send" iconSize={32} onClick={this.sendTextMessage} />
                     <Dialog
                         className="codeEditor-dialog"

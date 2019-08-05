@@ -1,5 +1,5 @@
 import fetch from 'utils/fetch';
-import convertRobot10Message from 'utils/convertRobot10Message';
+import convertMessage from 'utils/convertMessage';
 import store from './store';
 
 const getFriendId = require('utils/getFriendId');
@@ -47,23 +47,19 @@ async function setUser(user) {
         ...user.groups.map(g => g._id),
         ...user.friends.map(f => f._id),
     ];
-    if (linkmanIds.length > 0) {
-        const [err, messages] = await fetch('getLinkmansLastMessages', { linkmans: linkmanIds });
-        for (const key in messages) {
-            messages[key].forEach(m => convertRobot10Message(m));
-        }
-        if (!err) {
-            dispatch({
-                type: 'SetLinkmanMessages',
-                messages,
-            });
-        }
+    const [err, messages] = await fetch('getLinkmansLastMessages', { linkmans: linkmanIds });
+    for (const key in messages) {
+        messages[key].forEach(m => convertMessage(m));
+    }
+    if (!err) {
+        dispatch({
+            type: 'SetLinkmanMessages',
+            messages,
+        });
     }
 }
 async function setGuest(defaultGroup) {
-    if (defaultGroup && defaultGroup.messages) {
-        defaultGroup.messages.forEach(m => convertRobot10Message(m));
-    }
+    defaultGroup.messages.forEach(m => convertMessage(m));
     dispatch({
         type: 'SetDeepValue',
         keys: ['user'],
@@ -110,7 +106,7 @@ function addLinkmanMessage(linkmanId, message) {
     });
 }
 function addLinkmanMessages(linkmanId, messages) {
-    messages.forEach(m => convertRobot10Message(m));
+    messages.forEach(m => convertMessage(m));
     dispatch({
         type: 'AddLinkmanMessages',
         linkmanId,
@@ -118,6 +114,7 @@ function addLinkmanMessages(linkmanId, messages) {
     });
 }
 function updateSelfMessage(linkmanId, messageId, message) {
+    convertMessage(message);
     dispatch({
         type: 'UpdateSelfMessage',
         linkmanId,
@@ -154,9 +151,23 @@ function setGroupMembers(groupId, members) {
 }
 function setGroupAvatar(groupId, avatar) {
     dispatch({
-        type: 'SetGroupAvatar',
+        type: 'SetGroupInfo',
         groupId,
-        avatar,
+        key: 'avatar',
+        value: avatar,
+    });
+}
+/**
+ * Update the avatar of the specified group in the store
+ * @param {string} groupId group id
+ * @param {string} name group new name
+ */
+function setGroupName(groupId, name) {
+    dispatch({
+        type: 'SetGroupInfo',
+        groupId,
+        key: 'name',
+        value: name,
     });
 }
 function addLinkman(linkman, focus = false) {
@@ -192,14 +203,6 @@ function showLoginDialog() {
         type: 'SetDeepValue',
         keys: ['ui', 'showLoginDialog'],
         value: true,
-    });
-}
-
-function showGroup(value) {
-    dispatch({
-        type: 'SetDeepValue',
-        keys: ['ui', 'showGroup'],
-        value: !!value,
     });
 }
 function closeLoginDialog() {
@@ -278,6 +281,7 @@ export default {
     setFocus,
     setGroupMembers,
     setGroupAvatar,
+    setGroupName,
     addLinkman,
     removeLinkman,
     setFriend,
@@ -296,5 +300,4 @@ export default {
     setSoundSwitch,
     setNotificationSwitch,
     setVoiceSwitch,
-    showGroup,
 };

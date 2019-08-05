@@ -18,6 +18,7 @@ import setCssVariable from 'utils/setCssVariable';
 import readDiskFile from 'utils/readDiskFile';
 import playSound from 'utils/sound';
 import booleanStateDecorator from 'utils/booleanStateDecorator';
+import uploadFile from 'utils/uploadFile';
 import OnlineStatus from './OnlineStatus';
 import AppDownload from './AppDownload';
 import AdminDialog from './AdminDialog';
@@ -77,7 +78,7 @@ class Sidebar extends Component {
         notificationSwitch: PropTypes.bool,
         voiceSwitch: PropTypes.bool,
         isAdmin: PropTypes.bool,
-        showGroup: PropTypes.bool,
+        userId: PropTypes.string,
     }
     constructor(...args) {
         super(...args);
@@ -85,11 +86,6 @@ class Sidebar extends Component {
             backgroundLoading: false,
         };
     }
-
-    handleShowGroupChange = () => {
-        action.showGroup(!this.props.showGroup);
-    }
-
     handlePrimaryColorChange = (color) => {
         const primaryColor = `${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b}`;
         const { primaryTextColor } = this.props;
@@ -110,14 +106,20 @@ class Sidebar extends Component {
     selectBackgroundImage = async () => {
         this.toggleBackgroundLoading();
         try {
-            const file = await readDiskFile('base64', 'image/png,image/jpeg,image/gif');
-            if (!file) {
+            const image = await readDiskFile('blob', 'image/png,image/jpeg,image/gif');
+            if (!image) {
                 return;
             }
-            if (file.length > config.maxBackgroundImageSize) {
+            if (image.length > config.maxBackgroundImageSize) {
                 return Message.error('设置背景图失败, 请选择小于3MB的图片');
             }
-            action.setBackgroundImage(file.result);
+            const { userId } = this.props;
+            const imageUrl = await uploadFile(
+                image.result,
+                `BackgroundImage/${userId}_${Date.now()}`,
+                `BackgroundImage_${userId}_${Date.now()}.${image.ext}`,
+            );
+            action.setBackgroundImage(imageUrl);
         } finally {
             this.toggleBackgroundLoading();
         }
@@ -132,7 +134,7 @@ class Sidebar extends Component {
         );
     }
     render() {
-        const { isLogin, isConnect, avatar, primaryColor, primaryTextColor, backgroundImage, sound, soundSwitch, notificationSwitch, voiceSwitch, isAdmin, showGroup } = this.props;
+        const { isLogin, isConnect, avatar, primaryColor, primaryTextColor, backgroundImage, sound, soundSwitch, notificationSwitch, voiceSwitch, isAdmin } = this.props;
         const { settingDialog, userDialog, rewardDialog, infoDialog, appDownloadDialog, backgroundLoading, adminDialog } = this.state;
         if (isLogin) {
             return (
@@ -146,20 +148,13 @@ class Sidebar extends Component {
                                 :
                                 null
                         }
-
-                        {
-                            showGroup ?
-                                Sidebar.renderTooltip('展开', <IconButton width={40} height={40} icon="indent" iconSize={26} onClick={this.handleShowGroupChange} />)
-                                :
-                                Sidebar.renderTooltip('折叠', <IconButton width={40} height={40} icon="unindent" iconSize={26} onClick={this.handleShowGroupChange} />)
-                        }
                         <Tooltip placement="right" mouseEnterDelay={0.3} overlay={<span>源码</span>}>
-                            <a href="https://github.com/ztgreat/fiora" target="_black" rel="noopener noreferrer">
+                            <a href="https://github.com/yinxin630/fiora" target="_black" rel="noopener noreferrer">
                                 <IconButton width={40} height={40} icon="github" iconSize={26} />
                             </a>
                         </Tooltip>
-                        {/* {Sidebar.renderTooltip('下载APP', <IconButton width={40} height={40} icon="app" iconSize={28} onClick={this.toggleAppDownloadDialog} />)} */}
-                        {/* {Sidebar.renderTooltip('打赏', <IconButton width={40} height={40} icon="dashang" iconSize={26} onClick={this.toggleRewardDialog} />)} */}
+                        {Sidebar.renderTooltip('下载APP', <IconButton width={40} height={40} icon="app" iconSize={28} onClick={this.toggleAppDownloadDialog} />)}
+                        {Sidebar.renderTooltip('打赏', <IconButton width={40} height={40} icon="dashang" iconSize={26} onClick={this.toggleRewardDialog} />)}
                         {Sidebar.renderTooltip('关于', <IconButton width={40} height={40} icon="about" iconSize={26} onClick={this.toggleInfoDialog} />)}
                         {Sidebar.renderTooltip('设置', <IconButton width={40} height={40} icon="setting" iconSize={26} onClick={this.toggleSettingDialog} />)}
                         {Sidebar.renderTooltip('退出登录', <IconButton width={40} height={40} icon="logout" iconSize={26} onClick={Sidebar.logout} />)}
@@ -272,6 +267,13 @@ class Sidebar extends Component {
                                     <li>Alt + D: 发送表情包</li>
                                 </ul>
                             </div>
+                            <div>
+                                <p>命令消息</p>
+                                <ul>
+                                    <li>-roll [number]: 掷点</li>
+                                    <li>-rps: 石头剪刀布</li>
+                                </ul>
+                            </div>
                         </div>
                     </Dialog>
                     <AppDownload visible={appDownloadDialog} onClose={this.toggleAppDownloadDialog} />
@@ -280,7 +282,7 @@ class Sidebar extends Component {
             );
         }
         return (
-            <div />
+            <div className="module-main-sidebar" />
         );
     }
 }
@@ -297,5 +299,5 @@ export default connect(state => ({
     soundSwitch: state.getIn(['ui', 'soundSwitch']),
     notificationSwitch: state.getIn(['ui', 'notificationSwitch']),
     voiceSwitch: state.getIn(['ui', 'voiceSwitch']),
-    showGroup: !!state.getIn(['ui', 'showGroup']),
+    userId: state.getIn(['user', '_id']),
 }))(Sidebar);

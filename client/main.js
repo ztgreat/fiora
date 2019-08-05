@@ -24,7 +24,7 @@ import socket from './socket';
 import notification from '../utils/notification';
 import sound from '../utils/sound';
 import getFriendId from '../utils/getFriendId';
-import convertRobot10Message from '../utils/convertRobot10Message';
+import convertMessage from '../utils/convertMessage';
 import voice from '../utils/voice';
 
 if (window.Notification && (window.Notification.permission === 'default' || window.Notification.permission === 'denied')) {
@@ -71,8 +71,7 @@ socket.on('disconnect', () => {
 
 let prevFrom = '';
 socket.on('message', (message) => {
-    // robot10
-    convertRobot10Message(message);
+    convertMessage(message);
 
     const state = store.getState();
     const isSelfMessage = message.from._id === state.getIn(['user', '_id']);
@@ -130,24 +129,37 @@ socket.on('message', (message) => {
         sound(soundType);
     }
 
-    if (message.type === 'text' && state.getIn(['ui', 'voiceSwitch'])) {
-        const text = message.content
-            .replace(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_+.~#?&//=]*)/g, '')
-            .replace(/#/g, '');
-        // The maximum number of words is 200
-        if (text.length > 100) {
-            return;
-        }
+    if (state.getIn(['ui', 'voiceSwitch'])) {
+        if (message.type === 'text') {
+            const text = message.content
+                .replace(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_+.~#?&//=]*)/g, '')
+                .replace(/#/g, '');
 
-        const from = linkman && linkman.get('type') === 'group' ?
-            `${message.from.username}在${linkman.get('name')}说`
-            :
-            `${message.from.username}对你说`;
-        if (text) {
-            voice.push(from !== prevFrom ? from + text : text, message.from.username);
+            if (text.length > 100) {
+                return;
+            }
+
+            const from = linkman && linkman.get('type') === 'group' ?
+                `${message.from.username}在${linkman.get('name')}说`
+                :
+                `${message.from.username}对你说`;
+            if (text) {
+                voice.push(from !== prevFrom ? from + text : text, message.from.username);
+            }
+            prevFrom = from;
+        } else if (message.type === 'system') {
+            voice.push(message.from.originUsername + message.content);
+            prevFrom = null;
         }
-        prevFrom = from;
     }
+});
+
+socket.on('changeGroupName', ({ groupId, name }) => {
+    action.setGroupName(groupId, name);
+});
+
+socket.on('deleteGroup', ({ groupId }) => {
+    action.removeLinkman(groupId);
 });
 
 ReactDom.render(

@@ -1,5 +1,5 @@
 const Koa = require('koa');
-const IO = require('koa-socket');
+const IO = require('koa-socket-2');
 const koaSend = require('koa-send');
 const koaStatic = require('koa-static');
 const path = require('path');
@@ -11,6 +11,7 @@ const seal = require('./middlewares/seal');
 const frequency = require('./middlewares/frequency');
 const isLogin = require('./middlewares/isLogin');
 const route = require('./middlewares/route');
+const isAdmin = require('./middlewares/isAdmin');
 
 const userRoutes = require('./routes/user');
 const groupRoutes = require('./routes/group');
@@ -73,6 +74,7 @@ io.use(catchError());
 io.use(seal());
 io.use(frequency());
 io.use(isLogin());
+io.use(isAdmin());
 io.use(route(
     app.io,
     app._io,
@@ -85,11 +87,12 @@ app.io.on('connection', async (ctx) => {
         id: ctx.socket.id,
         ip: ctx.socket.request.connection.remoteAddress,
     });
-});
-app.io.on('disconnect', async (ctx) => {
-    console.log(`  >>>> disconnect ${ctx.socket.id}`);
-    await Socket.remove({
-        id: ctx.socket.id,
+
+    ctx.socket.on('disconnect', async () => {
+        console.log(`  >>>> disconnect ${ctx.socket.id}`);
+        await Socket.deleteOne({
+            id: ctx.socket.id,
+        });
     });
 });
 

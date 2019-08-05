@@ -7,6 +7,7 @@ const ip = require('ip');
 const User = require('../models/user');
 const Group = require('../models/group');
 const config = require('../../config/server');
+const { SealTimeout } = require('../../utils/const');
 
 let baiduToken = '';
 let lastBaiduTokenTime = Date.now();
@@ -65,8 +66,6 @@ module.exports = {
         return { token: baiduToken };
     },
     async sealUser(ctx) {
-        assert(ctx.socket.user.toString() === config.administrator, '你不是管理员');
-
         const { username } = ctx.data;
         assert(username !== '', 'username不能为空');
 
@@ -80,15 +79,13 @@ module.exports = {
         sealList.add(userId);
         setTimeout(() => {
             sealList.delete(userId);
-        }, 1000 * 60 * 10);
+        }, SealTimeout);
 
         return {
             msg: 'ok',
         };
     },
-    async getSealList(ctx) {
-        assert(ctx.socket.user.toString() === config.administrator, '你不是管理员');
-
+    async getSealList() {
         const sealList = global.mdb.get('sealList');
         const userIds = [...sealList.keys()];
         const users = await User.find({ _id: { $in: userIds } });
@@ -96,6 +93,14 @@ module.exports = {
         return result;
     },
     async uploadFile(ctx) {
+        assert(
+            config.qiniuAccessKey === ''
+            || config.qiniuBucket === ''
+            || config.qiniuBucket === ''
+            || config.qiniuUrlPrefix === '',
+            '已配置七牛, 请使用七牛文件上传',
+        );
+
         try {
             await fs.writeFile$(path.resolve(__dirname, `../../public/${ctx.data.fileName}`), ctx.data.file);
             return {

@@ -9,18 +9,7 @@ setCssVariable(primaryColor, primaryTextColor);
 let backgroundImage = window.localStorage.getItem('backgroundImage');
 if (!backgroundImage) {
     backgroundImage = config.backgroundImage; // eslint-disable-line
-    const img = new Image();
-    img.crossOrigin = 'Anonymous';
-    img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        const base64 = canvas.toDataURL('image/jpeg');
-        window.localStorage.setItem('backgroundImage', base64);
-    };
-    img.src = backgroundImage;
+    window.localStorage.setItem('backgroundImage', backgroundImage);
 }
 const sound = window.localStorage.getItem('sound') || config.sound;
 
@@ -82,13 +71,10 @@ function reducer(state = initialState, action) {
     case 'SetUser': {
         let newState = state;
         if (state.getIn(['user', '_id']) === undefined) {
+            const firstLinkman = (action.user.linkmans[0] && action.user.linkmans[0]._id) || '';
             newState = newState
-                .set('user', immutable.fromJS(action.user));
-            if (action.user.linkmans.length > 0) {
-                newState = newState.set('focus', state.get('focus') || action.user.linkmans[0]._id);
-            } else {
-                newState = newState.set('focus', state.get('focus'));
-            }
+                .set('user', immutable.fromJS(action.user))
+                .set('focus', state.get('focus') || firstLinkman);
         } else {
             newState = newState.updateIn(['user', 'linkmans'], (linkmans) => {
                 let newLinkmans = linkmans;
@@ -137,11 +123,11 @@ function reducer(state = initialState, action) {
             .findIndex(l => l.get('_id') === action.groupId);
         return state.setIn(['user', 'linkmans', linkmanIndex, 'members'], immutable.fromJS(action.members));
     }
-    case 'SetGroupAvatar': {
+    case 'SetGroupInfo': {
         const linkmanIndex = state
             .getIn(['user', 'linkmans'])
             .findIndex(l => l.get('_id') === action.groupId);
-        return state.setIn(['user', 'linkmans', linkmanIndex, 'avatar'], action.avatar);
+        return state.setIn(['user', 'linkmans', linkmanIndex, action.key], action.value);
     }
     case 'SetFocus': {
         const linkmanIndex = state

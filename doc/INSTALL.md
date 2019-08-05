@@ -1,6 +1,12 @@
 # Precondition
 
-To run Fiora, you need to have Node.js (>= version 8.9.0) environment, MongoDB database
+To run Fiora, you need to have Node.js (>= version 8.9.0), MongoDB database. Or docker
+
+# Run on docker
+
+Clone the project to the local `git clone https://github.com/yinxin630/fiora.git -b master`
+
+execute `docker-compose up`
 
 # Run on local
 
@@ -59,14 +65,42 @@ Link run on local
 
 build client `npm run build`
 
-move build result to public directory `mv dist/fiora/* public`
+move build result to public directory `npm run move-dist`
 
 Or if you use qiniu.com CDN, you can upload the build result to qiniu.com, and then just put `index.html` in the public directory, so the performance will be better
 
 ## Step5
 
-use pm2 start server `export NODE_ENV=production && pm2 start server/main.js --name="fiora"`
+ - Server machine：make directory and clone code source
+ 
+    get pm2 yarn `npm install -g pm2 yarn`
+    
+    make directory `mkdir -p /root/projects/fiora`
 
-## 第六步
+    clone your code to source directory 
+    
+    an example: `git clone -b master git@github.com:yinxin630/fiora.git /root/projects/fiora/source`
 
-open page `http://[服务端ip]:[fiora端口号]`
+    here is the file-tree
+
+    ![](./screenshots/pm2-deploy-00.png)
+    
+ - Development machine：
+ 
+    get a duplicate file and rename to `ecosystem.config.js` then `vim` it
+    
+    `cp ecosystem.config.js.example ecosystem.config.js`
+    
+    `vim ecosystem.config.js`
+    
+    ![](./screenshots/pm2-deploy-01.png)
+    
+ - First start/ Every time to update 
+ 
+    just execute `./deploy.sh`
+    
+    ![](./screenshots/pm2-deploy-02.png)
+
+## Step 6
+
+open page `http://[server ip]:[fiora port]`

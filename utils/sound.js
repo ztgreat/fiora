@@ -10,6 +10,7 @@ const sounds = {
 let prevType = 'default';
 const $audio = document.createElement('audio');
 const $source = document.createElement('source');
+$audio.volume = 0.6;
 $source.setAttribute('type', 'audio/mp3');
 $source.setAttribute('src', sounds[prevType]);
 $audio.appendChild($source);
@@ -17,19 +18,16 @@ document.body.appendChild($audio);
 
 let isPlaying = false;
 
-function play() {
+async function play() {
     if (!isPlaying) {
         isPlaying = true;
-        const playPromise = $audio.play();
-        if (playPromise) {
-            playPromise.then(() => {
-                isPlaying = false;
-            }).catch((res) => {
-                console.log("播放音频异常")
-                // isPlaying = false;
-                // $audio.load();
-                // play();
-            });
+
+        try {
+            await $audio.play();
+        } catch (err) {
+            console.warn('播放新消息提示音失败', err.message);
+        } finally {
+            isPlaying = false;
         }
     }
 }
